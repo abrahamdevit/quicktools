@@ -3,33 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word & Character Counter - My Utility Tools - doquick- quicktools- webtools- pdf word counter</title>
-    <meta name="description" content="Upload you own files and Count words, characters, and sentences instantly. Free online tool for documents and text analysis.">
-    <!-- Tailwind CSS CDN for styling -->
+    <title>Word & Character Counter - My Utility Tools</title>
+    <meta name="description" content="Count words, characters, and sentences instantly. Free online tool for documents and text analysis. Supports .txt, .docx, and .pdf files.">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Mammoth.js for .docx parsing -->
     <script src="https://unpkg.com/mammoth@1.4.15/mammoth.browser.min.js"></script>
-    <!-- PDF.js for .pdf parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
-        /* Custom font for a clean look */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
+            background-color: #f3f4f6;
         }
 
-        /* Loading Overlay Styles */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white */
+            background-color: rgba(255, 255, 255, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000; /* Ensure it's on top */
+            z-index: 1000;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
@@ -41,8 +36,8 @@
         }
 
         .spinner {
-            border: 4px solid #f3f3f3; /* Light grey */
-            border-top: 4px solid #3498db; /* Blue */
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -58,7 +53,6 @@
      crossorigin="anonymous"></script>
 </head>
 <body class="flex flex-col min-h-screen text-gray-800">
-    <!-- Header Section -->
     <header class="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-6 shadow-lg rounded-b-xl">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-3xl font-bold">Word & Character Counter</h1>
@@ -66,26 +60,22 @@
                 <ul class="flex space-x-4">
                     <li><a href="index.html" class="hover:text-blue-200 transition duration-300 font-semibold">Home</a></li>
                     <li><a href="unit-converter.html" class="hover:text-blue-200 transition duration-300">Unit Converter</a></li>
-                    <!-- Add more navigation links here for future tool pages -->
+                    <li><a href="image-to-text.html" class="hover:text-blue-200 transition duration-300">Image to Text</a></li>
                 </ul>
             </nav>
         </div>
     </header>
 
-    <!-- Main Content Area -->
     <main class="container mx-auto p-4 flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
 
-        <!-- Main Counter Card -->
         <div class="md:col-span-2 bg-white p-8 rounded-2xl shadow-xl border border-gray-200 flex flex-col items-center">
             <h2 class="text-2xl font-semibold mb-6 text-center">Count Words and Characters</h2>
 
-            <!-- Text Input Area -->
             <div class="mb-6 w-full max-w-3xl">
                 <label for="textArea" class="block text-sm font-medium text-gray-700 mb-2">Paste your text here:</label>
                 <textarea id="textArea" rows="10" class="w-full p-4 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 text-lg font-medium resize-y" placeholder="Start typing or paste your document content..."></textarea>
             </div>
 
-            <!-- File Upload Area -->
             <div class="mb-6 w-full max-w-3xl text-center">
                 <p class="text-gray-600 mb-2">Or upload a document (.txt, .docx, .pdf):</p>
                 <label for="fileInput" class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition transform hover:scale-105">
@@ -99,7 +89,6 @@
                 <p class="mt-2 text-sm text-red-500" id="fileError"></p>
             </div>
 
-            <!-- Results Display -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl mt-8">
                 <div class="p-5 bg-green-50 rounded-xl shadow-md border border-green-200 text-center">
                     <p class="text-sm font-medium text-green-700">Word Count:</p>
@@ -112,18 +101,16 @@
             </div>
         </div>
 
-        <!-- Ad Area Section (Placeholder) -->
         <aside class="md:col-span-1 bg-white p-6 rounded-2xl shadow-xl border border-gray-200 flex flex-col justify-center items-center text-center">
-            <h3 class="text-xl font-semibold mb-4 text-gray-700">Advertisements</h3>
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Advertisement</h3>
             <div class="w-full h-48 bg-gray-200 flex items-center justify-center rounded-lg border-dashed border-2 border-gray-400 text-gray-500">
-                <p>no Ads loaded!</p>
+                <p>Your Ad Here!</p>
             </div>
-            <p class="mt-4 text-sm text-gray-600"></p>
+            <p class="mt-4 text-sm text-gray-600">Integrate your ad network code here to monetize your website.</p>
         </aside>
 
     </main>
 
-    <!-- Footer Section -->
     <footer class="bg-gray-800 text-white p-6 mt-8 rounded-t-xl shadow-lg">
         <div class="container mx-auto text-center">
             <p>&copy; 2025 My Utility Tools. All rights reserved.</p>
@@ -131,13 +118,11 @@
         </div>
     </footer>
 
-    <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
     </div>
 
     <script>
-        // Get DOM elements
         const textArea = document.getElementById('textArea');
         const fileInput = document.getElementById('fileInput');
         const fileNameDisplay = document.getElementById('fileName');
@@ -146,34 +131,16 @@
         const charCountDisplay = document.getElementById('charCount');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        /**
-         * Counts words and characters in a given text and updates the display.
-         * @param {string} text The input text to count.
-         */
         function updateCounts(text) {
-            // Remove leading/trailing whitespace
             const trimmedText = text.trim();
-
-            // Character count: simply the length of the string
             const charCount = trimmedText.length;
-
-            // Word count: split by one or more whitespace characters,
-            // then filter out empty strings in case of multiple spaces.
-            // If the text is empty, wordCount should be 0.
             const words = trimmedText.length > 0 ? trimmedText.split(/\s+/).filter(word => word.length > 0) : [];
             const wordCount = words.length;
 
-            // Update the display elements
             wordCountDisplay.textContent = wordCount;
             charCountDisplay.textContent = charCount;
         }
 
-        /**
-         * Reads the content of a file based on its type and returns a Promise resolving with the text.
-         * Supports .txt, .docx, and .pdf files.
-         * @param {File} file The file object to read.
-         * @returns {Promise<string>} A promise that resolves with the extracted text.
-         */
         async function readFileContent(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -181,14 +148,12 @@
                 reader.onload = async (e) => {
                     const arrayBuffer = e.target.result;
                     const fileType = file.type;
-                    const fileName = file.name.toLowerCase(); // Use lowercase for extension check
+                    const fileName = file.name.toLowerCase();
 
                     try {
                         if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
-                            // For plain text files, decode directly from ArrayBuffer
                             resolve(new TextDecoder('utf-8').decode(arrayBuffer));
                         } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.docx')) {
-                            // For .docx files, use mammoth.js
                             if (typeof mammoth === 'undefined') {
                                 reject(new Error('Mammoth.js library not loaded. Cannot process .docx files.'));
                                 return;
@@ -196,13 +161,10 @@
                             const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
                             resolve(result.value);
                         } else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-                            // For .pdf files, use pdf.js
                             if (typeof pdfjsLib === 'undefined') {
                                 reject(new Error('PDF.js library not loaded. Cannot process .pdf files.'));
                                 return;
                             }
-                            // Set worker source for pdf.js. IMPORTANT: This path must be correct relative to where pdf.js worker is served.
-                            // For CDN, use the worker URL from the same CDN.
                             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
                             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -210,9 +172,8 @@
                             for (let i = 1; i <= pdf.numPages; i++) {
                                 const page = await pdf.getPage(i);
                                 const textContent = await page.getTextContent();
-                                // Concatenate text items, adding a space or newline for better readability
                                 fullText += textContent.items.map(item => item.str).join(' ');
-                                if (i < pdf.numPages) fullText += '\n'; // Add newline between pages
+                                if (i < pdf.numPages) fullText += '\n';
                             }
                             resolve(fullText);
                         } else {
@@ -228,50 +189,45 @@
                     reject('Error reading file. Please try again.');
                 };
 
-                // Read file as ArrayBuffer for binary processing, required by mammoth.js and pdf.js
                 reader.readAsArrayBuffer(file);
             });
         }
 
-        // Event listener for text area input
         textArea.addEventListener('input', () => {
             updateCounts(textArea.value);
-            // Clear file input and name display if user starts typing
             fileInput.value = '';
             fileNameDisplay.textContent = '';
             fileErrorDisplay.textContent = '';
         });
 
-        // Event listener for file input change
         fileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
-            fileErrorDisplay.textContent = ''; // Clear previous errors
-            fileNameDisplay.textContent = ''; // Clear previous file name
-            textArea.value = ''; // Clear text area
-            updateCounts(''); // Reset counts
+            fileErrorDisplay.textContent = '';
+            fileNameDisplay.textContent = '';
+            textArea.value = '';
+            updateCounts('');
 
             if (file) {
                 fileNameDisplay.textContent = `Processing: ${file.name}...`;
-                loadingOverlay.classList.add('active'); // Show loading indicator
+                loadingOverlay.classList.add('active');
 
                 try {
                     const text = await readFileContent(file);
                     textArea.value = text;
                     updateCounts(text);
-                    fileNameDisplay.textContent = `Selected: ${file.name}`; // Update on successful processing
+                    fileNameDisplay.textContent = `Selected: ${file.name}`;
                 } catch (error) {
                     fileErrorDisplay.textContent = error;
                     console.error('File upload handler error:', error);
                 } finally {
-                    loadingOverlay.classList.remove('active'); // Hide loading indicator
-                    fileInput.value = ''; // Clear file input value to allow re-uploading the same file
+                    loadingOverlay.classList.remove('active');
+                    fileInput.value = '';
                 }
             }
         });
 
-        // Initial count when the page loads
         window.onload = function() {
-            updateCounts(textArea.value); // Count initial text if any
+            updateCounts(textArea.value);
         };
     </script>
 </body>
