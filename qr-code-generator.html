@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator - My Utility Tools</title>
+    <meta name="description" content="Generate QR codes instantly for text, URLs, Wi-Fi, and more. Free, fast, and easy-to-use online QR code creator. Download your QR code image.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Custom styling for the QR code canvas */
+        .qrcode-canvas-container {
+            border: 1px solid #e2e8f0; /* Tailwind border-gray-200 */
+            border-radius: 0.75rem; /* Tailwind rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Tailwind shadow-md */
+            background-color: #ffffff;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Ensures the canvas fits nicely inside and scales */
+            max-width: 300px; /* Max width for the QR code */
+            width: 100%;
+            height: auto; /* Allow height to adjust to content */
+            aspect-ratio: 1 / 1; /* Keep square aspect ratio */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-gray-800">
+    <header class="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-6 shadow-lg rounded-b-xl">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold">QR Code Generator</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="hover:text-blue-200 transition duration-300 font-semibold">Home</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
+
+        <div class="md:col-span-2 bg-white p-8 rounded-2xl shadow-xl border border-gray-200 flex flex-col items-center">
+            <h2 class="text-2xl font-semibold mb-6 text-center">Create Custom QR Codes</h2>
+
+            <div class="mb-6 w-full max-w-lg">
+                <label for="qrDataInput" class="block text-sm font-medium text-gray-700 mb-2">Enter Text or URL:</label>
+                <textarea id="qrDataInput" rows="4" class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg font-medium resize-y" placeholder="e.g., https://www.arradstudio.com or Your custom message"></textarea>
+            </div>
+
+            <button id="generateQrBtn" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition transform hover:-translate-y-1 mb-8">
+                Generate QR Code
+            </button>
+
+            <div id="qrcode" class="qrcode-canvas-container hidden">
+                <!-- QR code canvas will be inserted here by qrcode.js -->
+            </div>
+            <p id="qrError" class="mt-4 text-sm text-red-500"></p>
+
+            <button id="downloadQrBtn" class="mt-6 px-6 py-2 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 transition transform hover:-translate-y-1 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline-block mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download QR Code
+            </button>
+        </div>
+
+        <aside class="md:col-span-1 bg-white p-6 rounded-2xl shadow-xl border border-gray-200 flex flex-col justify-center items-center text-center">
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Advertisement</h3>
+            <div class="w-full h-48 bg-gray-200 flex items-center justify-center rounded-lg border-dashed border-2 border-gray-400 text-gray-500">
+                <p>Your Ad Here!</p>
+            </div>
+            <p class="mt-4 text-sm text-gray-600"></p>
+        </aside>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white p-6 mt-8 rounded-t-xl shadow-lg">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2025 My Utility Tools. All rights reserved.</p>
+            <p class="text-sm mt-2">Generate codes with ease.</p>
+        </div>
+    </footer>
+
+    <script>
+        const qrDataInput = document.getElementById('qrDataInput');
+        const generateQrBtn = document.getElementById('generateQrBtn');
+        const qrcodeDiv = document.getElementById('qrcode');
+        const qrError = document.getElementById('qrError');
+        const downloadQrBtn = document.getElementById('downloadQrBtn');
+
+        let qrcodeInstance = null; // To store the QR code instance
+
+        function generateQRCode() {
+            const data = qrDataInput.value.trim();
+            qrError.textContent = '';
+            downloadQrBtn.classList.add('hidden');
+            qrcodeDiv.classList.add('hidden');
+            qrcodeDiv.innerHTML = ''; // Clear previous QR code
+
+            if (data === '') {
+                qrError.textContent = 'Please enter text or a URL to generate a QR code.';
+                return;
+            }
+
+            try {
+                // Destroy previous instance if it exists to avoid memory leaks
+                if (qrcodeInstance) {
+                    qrcodeInstance.clear(); // Clear the canvas
+                }
+
+                // Create new QR code instance
+                // This library directly renders to a canvas element
+                qrcodeInstance = new QRCode(qrcodeDiv, {
+                    text: data,
+                    width: 256, // Fixed size for generation, CSS scales it
+                    height: 256,
+                    colorDark : "#424242", // Dark Gray from palette
+                    colorLight : "#ffffff", // White background
+                    correctLevel : QRCode.CorrectLevel.H // High error correction
+                });
+
+                qrcodeDiv.classList.remove('hidden');
+                downloadQrBtn.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('QR Code generation error:', error);
+                qrError.textContent = 'Error generating QR code. Please try again.';
+            }
+        }
+
+        function downloadQRCode() {
+            if (!qrcodeInstance) {
+                qrError.textContent = 'No QR code to download.';
+                return;
+            }
+
+            // Get the canvas element generated by qrcode.js
+            const canvas = qrcodeDiv.querySelector('canvas');
+            if (canvas) {
+                const url = canvas.toDataURL("image/png");
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'qrcode.png';
+                document.body.appendChild(a); // Append to body to ensure it's in the DOM for click
+                a.click();
+                document.body.removeChild(a); // Clean up
+            } else {
+                qrError.textContent = 'Failed to get QR code image.';
+            }
+        }
+
+        generateQrBtn.addEventListener('click', generateQRCode);
+        downloadQrBtn.addEventListener('click', downloadQRCode);
+
+        // Optional: Generate QR code on input change after a delay, or only on button click
+        // qrDataInput.addEventListener('input', () => {
+        //     clearTimeout(window.qrGenerateTimeout);
+        //     window.qrGenerateTimeout = setTimeout(generateQRCode, 500);
+        // });
+    </script>
+</body>
+</html>

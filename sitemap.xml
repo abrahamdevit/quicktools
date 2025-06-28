@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Home Page -->
+  <url>
+    <loc>https://arradstudio.com/</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <!-- Word & Character Counter Page -->
+  <url>
+    <loc>https://arradstudio.com/word-counter.html</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Universal Unit Converter Page -->
+  <url>
+    <loc>https://arradstudio.com/unit-converter.html</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Image to Text Extractor Page -->
+  <url>
+    <loc>https://arradstudio.com/image-to-text.html</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- QR Code Generator Page -->
+  <url>
+    <loc>https://arradstudio.com/qr-code-generator.html</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- CSV & Excel to Chart & PDF Exporter Page -->
+  <url>
+    <loc>https://arradstudio.com/csv-chart-exporter.html</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>

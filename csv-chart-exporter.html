@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV & Excel to Chart & PDF Exporter - My Utility Tools</title>
+    <meta name="description" content="Convert CSV and Excel (.xlsx) data into interactive charts (bar, line, pie) and export them as PDF. Visualize your data easily and download reports.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- SheetJS (xlsx.js) for Excel file parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px; /* Adjust height as needed */
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        @media (min-width: 640px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 450px;
+            }
+        }
+        @media (min-width: 1024px) {
+            .chart-container {
+                height: 500px;
+            }
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-gray-800">
+    <header class="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-6 shadow-lg rounded-b-xl">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold">CSV & Excel to Chart & PDF Exporter</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="hover:text-blue-200 transition duration-300 font-semibold">Home</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
+
+        <div class="md:col-span-2 bg-white p-8 rounded-2xl shadow-xl border border-gray-200 flex flex-col items-center">
+            <section class="text-center mb-8">
+                <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Visualize Your Data from CSV or Excel</h2>
+                <p class="text-lg text-gray-700 max-w-2xl mx-auto">
+                    Upload a CSV or Excel (.xlsx) file, or paste your data, to generate interactive charts (Bar, Line, Pie/Doughnut) and export them to PDF.
+                </p>
+                <p class="text-sm text-red-500 mt-2">
+                    Note: For Excel files, ensure the first row contains headers. Files are restricted to 5MB.
+                </p>
+            </section>
+
+            <div class="mb-6 w-full max-w-3xl">
+                <label for="csvInput" class="block text-sm font-medium text-gray-700 mb-2">Paste CSV Data here:</label>
+                <textarea id="csvInput" rows="8" class="w-full p-4 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg font-medium resize-y" placeholder="e.g.,
+Header1,Header2,Header3
+DataA,10,25
+DataB,20,30
+DataC,15,40"></textarea>
+            </div>
+
+            <div class="mb-6 w-full max-w-3xl text-center">
+                <p class="text-gray-600 mb-2">Or upload a CSV/Excel file (.csv, .xlsx):</p>
+                <label for="fileInput" class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition transform hover:scale-105">
+                    <svg class="-ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4a2 2 0 012 2v2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4v2a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 10V6h6v8H6z" clip-rule="evenodd" />
+                    </svg>
+                    Upload File (Max 5MB)
+                </label>
+                <input id="fileInput" type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
+                <p id="fileName" class="mt-2 text-sm text-gray-500"></p>
+                <p class="mt-2 text-sm text-red-500" id="fileError"></p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mb-8">
+                <div>
+                    <label for="chartType" class="block text-sm font-medium text-gray-700 mb-2">Chart Type:</label>
+                    <select id="chartType" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="bar">Bar Chart</option>
+                        <option value="line">Line Chart</option>
+                        <option value="doughnut">Pie/Doughnut Chart</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="labelColumn" class="block text-sm font-medium text-gray-700 mb-2">Label Column:</label>
+                    <select id="labelColumn" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="">Select Column</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="dataColumn" class="block text-sm font-medium text-gray-700 mb-2">Data Column (or series):</label>
+                    <select id="dataColumn" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="">Select Column</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="drawChartBtn" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition transform hover:-translate-y-1 mb-8">
+                Draw Chart
+            </button>
+
+            <div id="chartPreviewContainer" class="chart-container hidden">
+                <canvas id="myChart"></canvas>
+            </div>
+            <p id="chartError" class="mt-4 text-sm text-red-500"></p>
+
+            <button id="exportPdfBtn" class="mt-6 px-6 py-2 bg-purple-600 text-white font-bold rounded-full shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-50 transition transform hover:-translate-y-1 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline-block mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3V19.5" />
+                </svg>
+                Export to PDF
+            </button>
+        </div>
+
+        <aside class="md:col-span-1 bg-white p-6 rounded-2xl shadow-xl border border-gray-200 flex flex-col justify-center items-center text-center">
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Advertisement</h3>
+            <div class="w-full h-48 bg-gray-200 flex items-center justify-center rounded-lg border-dashed border-2 border-gray-400 text-gray-500">
+                <p>Your Ad Here!</p>
+            </div>
+            <p class="mt-4 text-sm text-gray-600"></p>
+        </aside>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white p-6 mt-8 rounded-t-xl shadow-lg">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2025 My Utility Tools. All rights reserved.</p>
+            <p class="text-sm mt-2">Visualize and export your data.</p>
+        </div>
+    </footer>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        // Chart.js global settings for responsive charts and common options
+        Chart.defaults.maintainAspectRatio = false;
+        Chart.defaults.responsive = true;
+        Chart.defaults.color = '#424242'; // Dark Gray from palette
+        Chart.defaults.font.family = 'Inter, sans-serif';
+        Chart.defaults.plugins.tooltip.callbacks.title = function(tooltipItems) {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            if (Array.isArray(label)) {
+                return label.join(' ');
+            } else {
+                return label;
+            }
+        };
+
+        const csvInput = document.getElementById('csvInput');
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileName');
+        const fileErrorDisplay = document.getElementById('fileError');
+        const chartTypeSelect = document.getElementById('chartType');
+        const labelColumnSelect = document.getElementById('labelColumn');
+        const dataColumnSelect = document.getElementById('dataColumn');
+        const drawChartBtn = document.getElementById('drawChartBtn');
+        const chartPreviewContainer = document.getElementById('chartPreviewContainer');
+        const myChartCanvas = document.getElementById('myChart');
+        const chartError = document.getElementById('chartError');
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        const MAX_FILE_SIZE_MB = 5; // 5 MB limit
+
+        let rawCsvData = []; // Store parsed CSV/Excel data
+        let myChartInstance = null; // Store Chart.js instance
+
+        // Function to parse CSV data
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length === 0) return { headers: [], data: [] };
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length === 0 || (values.length === 1 && values[0] === '')) continue; // Skip empty lines
+
+                if (values.length !== headers.length) {
+                    console.warn(`Skipping row ${i + 1} due to column mismatch. Expected ${headers.length}, got ${values.length}.`);
+                    continue;
+                }
+                let row = {};
+                headers.forEach((header, index) => {
+                    row[header] = values[index];
+                });
+                data.push(row);
+            }
+            return { headers, data };
+        }
+
+        // Function to parse Excel data
+        async function parseExcel(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0]; // Get the first sheet
+                    const worksheet = workbook.Sheets[sheetName];
+                    
+                    // Convert sheet to array of arrays, then extract headers and data
+                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Get data as array of arrays
+                    if (json.length === 0) {
+                        reject('Excel file is empty or could not be parsed.');
+                        return;
+                    }
+
+                    const headers = json[0].map(h => String(h).trim()); // First row as headers
+                    const dataRows = json.slice(1); // Rest of the rows as data
+
+                    const parsedData = [];
+                    dataRows.forEach(rowArr => {
+                        if (rowArr.length === 0 || (rowArr.length === 1 && String(rowArr[0]).trim() === '')) return; // Skip empty rows
+
+                        let rowObj = {};
+                        headers.forEach((header, idx) => {
+                            // Ensure the value is string to be consistent with CSV parsing
+                            rowObj[header] = rowArr[idx] !== undefined && rowArr[idx] !== null ? String(rowArr[idx]).trim() : '';
+                        });
+                        parsedData.push(rowObj);
+                    });
+                    
+                    resolve({ headers: headers, data: parsedData });
+                };
+                reader.onerror = (err) => reject(err);
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Function to populate column dropdowns
+        function populateColumnDropdowns(headers) {
+            labelColumnSelect.innerHTML = '<option value="">Select Column</option>';
+            dataColumnSelect.innerHTML = '<option value="">Select Column</option>';
+
+            headers.forEach(header => {
+                const optionLabel = document.createElement('option');
+                optionLabel.value = header;
+                optionLabel.textContent = header;
+                labelColumnSelect.appendChild(optionLabel);
+
+                const optionData = document.createElement('option');
+                optionData.value = header;
+                optionData.textContent = header;
+                dataColumnSelect.appendChild(optionData);
+            });
+        }
+
+        // Function to draw the chart
+        function drawChart() {
+            chartError.textContent = '';
+            chartPreviewContainer.classList.add('hidden');
+            exportPdfBtn.classList.add('hidden');
+
+            const chartType = chartTypeSelect.value;
+            const labelColumn = labelColumnSelect.value;
+            const dataColumn = dataColumnSelect.value;
+
+            if (!rawCsvData || !rawCsvData.data || rawCsvData.data.length === 0) {
+                chartError.textContent = 'No data loaded. Please upload a file or paste data.';
+                return;
+            }
+
+            if (!labelColumn || !dataColumn) {
+                chartError.textContent = 'Please select both Label Column and Data Column.';
+                return;
+            }
+
+            const labels = rawCsvData.data.map(row => row[labelColumn]);
+            // Attempt to parse data values to float, gracefully handle empty or non-numeric values
+            const dataValues = rawCsvData.data.map(row => {
+                const val = parseFloat(row[dataColumn]);
+                return isNaN(val) ? 0 : val; // Replace NaN with 0 or handle as needed
+            });
+
+            // If all data values are 0 after parsing, it might indicate an issue or no numeric data
+            if (dataValues.every(val => val === 0) && rawCsvData.data.some(row => parseFloat(row[dataColumn]) !== 0)) {
+                chartError.textContent = 'Selected data column does not contain valid numeric data.';
+                return;
+            }
+
+
+            if (myChartInstance) {
+                myChartInstance.destroy(); // Destroy previous chart instance
+            }
+
+            const backgroundColors = [
+                '#2196F3', // Blue
+                '#4CAF50', // Green
+                '#FFC107', // Yellow
+                '#F44336', // Red
+                '#9C27B0', // Purple
+                '#607D8B', // Blue Gray
+                '#00BCD4', // Cyan
+                '#FF9800'  // Orange
+            ];
+
+            const datasets = [{
+                label: dataColumn,
+                data: dataValues,
+                backgroundColor: chartType === 'doughnut' ? backgroundColors : backgroundColors[0],
+                borderColor: chartType === 'doughnut' ? [] : '#1976D2',
+                borderWidth: 1
+            }];
+
+            myChartInstance = new Chart(myChartCanvas, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const item = tooltipItems[0];
+                                    let label = item.chart.data.labels[item.dataIndex];
+                                    if (Array.isArray(label)) {
+                                        return label.join(' ');
+                                    } else {
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        legend: {
+                            display: chartType === 'doughnut' ? true : false,
+                            position: chartType === 'doughnut' ? 'right' : 'top',
+                            labels: {
+                                boxWidth: 20
+                            }
+                        }
+                    },
+                    scales: (chartType === 'bar' || chartType === 'line') ? {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: dataColumn
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: labelColumn
+                            }
+                        }
+                    } : {}
+                }
+            });
+
+            chartPreviewContainer.classList.remove('hidden');
+            exportPdfBtn.classList.remove('hidden');
+        }
+
+        // Function to export chart to PDF
+        function exportChartToPdf() {
+            if (!myChartInstance) {
+                chartError.textContent = 'No chart to export.';
+                return;
+            }
+
+            loadingOverlay.classList.add('active');
+
+            // Use html2canvas to render the chart canvas for PDF
+            html2canvas(chartPreviewContainer, {
+                scale: 2, // Increase scale for better resolution in PDF
+                useCORS: true // Important for images if any (though not directly used here)
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape', // or 'portrait'
+                    unit: 'px',
+                    format: [canvas.width, canvas.height] // Use canvas dimensions for PDF size
+                });
+
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save('chart.pdf');
+                loadingOverlay.classList.remove('active');
+            }).catch(error => {
+                console.error('Error generating PDF:', error);
+                chartError.textContent = 'Failed to export chart to PDF. Try again.';
+                loadingOverlay.classList.remove('active');
+            });
+        }
+
+        // Event Listeners
+        csvInput.addEventListener('input', () => {
+            fileInput.value = ''; // Clear file input if typing
+            fileNameDisplay.textContent = '';
+            chartError.textContent = '';
+            const { headers, data } = parseCSV(csvInput.value);
+            rawCsvData = { headers, data };
+            populateColumnDropdowns(headers);
+        });
+
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            fileErrorDisplay.textContent = '';
+            fileNameDisplay.textContent = '';
+            csvInput.value = ''; // Clear textarea if uploading file
+            chartError.textContent = '';
+            
+            if (!file) {
+                return;
+            }
+
+            if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                fileErrorDisplay.textContent = `File size exceeds ${MAX_FILE_SIZE_MB}MB limit.`;
+                fileInput.value = ''; // Clear the file input
+                return;
+            }
+
+            fileNameDisplay.textContent = `Processing: ${file.name}...`;
+            loadingOverlay.classList.add('active');
+
+            try {
+                let parsedContent;
+                if (file.type.includes('csv')) {
+                    const text = await file.text();
+                    parsedContent = parseCSV(text);
+                } else if (file.type.includes('spreadsheetml.sheet') || file.name.endsWith('.xlsx')) {
+                    parsedContent = await parseExcel(file);
+                } else {
+                    fileErrorDisplay.textContent = 'Unsupported file type. Please upload a CSV or XLSX file.';
+                    return;
+                }
+
+                rawCsvData = parsedContent;
+                populateColumnDropdowns(rawCsvData.headers);
+                
+                // Populate textarea with a preview of the data (optional, useful for debugging/user inspection)
+                // For Excel, this might just show the first few rows/columns
+                if (rawCsvData.data.length > 0) {
+                     csvInput.value = rawCsvData.headers.join(',') + '\n' + 
+                                      rawCsvData.data.slice(0, 5).map(row => Object.values(row).join(',')).join('\n') +
+                                      (rawCsvData.data.length > 5 ? '\n...' : '');
+                } else {
+                    csvInput.value = '';
+                }
+
+
+                fileNameDisplay.textContent = `Loaded: ${file.name}`;
+            } catch (error) {
+                fileErrorDisplay.textContent = error.message || 'Error processing file. Ensure it is a valid CSV or Excel file.';
+                console.error('File upload handler error:', error);
+            } finally {
+                loadingOverlay.classList.remove('active');
+                fileInput.value = ''; // Clear file input after processing
+            }
+        });
+
+        drawChartBtn.addEventListener('click', drawChart);
+        exportPdfBtn.addEventListener('click', exportChartToPdf);
+
+        // Initial setup on load
+        window.onload = function() {
+            // Optional: pre-populate with example CSV
+            csvInput.value = `Month,Sales,Expenses
+January,120,80
+February,150,90
+March,130,85
+April,180,100
+May,160,95`;
+            const { headers, data } = parseCSV(csvInput.value);
+            rawCsvData = { headers, data };
+            populateColumnDropdowns(headers);
+            // Pre-select columns for example
+            if (labelColumnSelect.querySelector('option[value="Month"]')) {
+                labelColumnSelect.value = "Month";
+            }
+            if (dataColumnSelect.querySelector('option[value="Sales"]')) {
+                dataColumnSelect.value = "Sales";
+            }
+            drawChart(); // Draw initial example chart
+        };
+    </script>
+</body>
+</html>
