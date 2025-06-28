@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Resizer & Compressor - My Utility Tools</title>
+    <meta name="description"
+        content="Resize and compress images online for free. Adjust dimensions, quality, and download optimized JPG, PNG, or WebP images directly in your browser for web, email, or social media.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Image-Q for advanced PNG color quantization -->
+    <script src="https://cdn.jsdelivr.net/npm/image-q@4.0.0/dist/image-q.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Style for the canvas where image processing happens, can be hidden */
+        #processingCanvas {
+            display: none;
+            /* Hide the primary processing canvas */
+        }
+
+        /* Style for the preview canvas */
+        #outputCanvas {
+            max-width: 100%;
+            height: auto;
+            /* Ensure canvas scales responsively */
+            display: block;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body class="flex flex-col min-h-screen text-gray-800">
+    <header class="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-6 shadow-lg rounded-b-xl">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold">Image Resizer & Compressor</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="index.html" class="hover:text-blue-200 transition duration-300 font-semibold">Home</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
+
+        <div class="md:col-span-2 bg-white p-8 rounded-2xl shadow-xl border border-gray-200 flex flex-col items-center">
+            <section class="text-center mb-8">
+                <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Resize and Compress Your Images</h2>
+                <p class="text-lg text-gray-700 max-w-2xl mx-auto">
+                    Optimize your images for web, email, or social media. Adjust dimensions and compression quality to
+                    get the perfect file size, all directly in your browser. Your images stay private!
+                </p>
+            </section>
+
+            <div class="mb-6 w-full max-w-lg text-center">
+                <p class="text-gray-600 mb-2">Upload an image file (.png, .jpg, .jpeg, .webp):</p>
+                <label for="imageInput"
+                    class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition transform hover:scale-105">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-5 h-5 mr-2">
+                        <path fill-rule="evenodd"
+                            d="M4 4a2 2 0 012-2h4a2 2 0 012 2v2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4v2a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 10V6h6v8H6z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    Upload Image
+                </label>
+                <input id="imageInput" type="file" accept="image/png, image/jpeg, image/jpg, image/webp" class="hidden">
+                <p id="imageFileName" class="mt-2 text-sm text-gray-500"></p>
+                <p class="mt-2 text-sm text-red-500" id="imageError"></p>
+            </div>
+
+            <div id="controlsContainer"
+                class="w-full max-w-xl grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-xl shadow-inner border border-gray-200 hidden">
+                <div class="col-span-full">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 text-center">Adjust Settings</h3>
+                </div>
+                <div>
+                    <label for="newWidth" class="block text-sm font-medium text-gray-700 mb-1">Width (px):</label>
+                    <input type="number" id="newWidth" min="1"
+                        class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                <div>
+                    <label for="newHeight" class="block text-sm font-medium text-gray-700 mb-1">Height (px):</label>
+                    <input type="number" id="newHeight" min="1"
+                        class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                <div class="col-span-full flex items-center">
+                    <input type="checkbox" id="maintainAspectRatio" checked
+                        class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                    <label for="maintainAspectRatio" class="ml-2 block text-sm text-gray-900">Maintain Aspect
+                        Ratio</label>
+                </div>
+                <div>
+                    <label for="qualityRange" class="block text-sm font-medium text-gray-700 mb-1">Quality: <span
+                            id="qualityValue">90</span>%</label>
+                    <input type="range" id="qualityRange" min="10" max="100" value="90"
+                        class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer range-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label for="outputFormatSelect" class="block text-sm font-medium text-gray-700 mb-1">Output
+                        Format:</label>
+                    <select id="outputFormatSelect"
+                        class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                        <option value="jpeg">JPG</option>
+                        <option value="png">PNG</option>
+                        <option value="webp">WebP</option>
+                    </select>
+                </div>
+                <div class="col-span-full flex justify-center mt-4">
+                    <button id="processImageBtn"
+                        class="px-8 py-3 bg-purple-600 text-white font-bold rounded-full shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-50 transition transform hover:-translate-y-1">
+                        Apply Changes
+                    </button>
+                </div>
+            </div>
+
+            <div id="outputContainer"
+                class="w-full max-w-xl mt-8 p-6 bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col items-center hidden">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Output Preview</h3>
+                <canvas id="outputCanvas" class="max-w-full h-auto mb-4"></canvas>
+                <div class="flex flex-wrap justify-center gap-4 text-center text-gray-700 mb-6">
+                    <p>Original: <span id="originalSize">0KB</span> (<span id="originalDimensions">0x0</span>)</p>
+                    <p>New: <span id="newSize">0KB</span> (<span id="newDimensions">0x0</span>)</p>
+                    <p id="sizeDifference" class="text-sm"></p>
+                </div>
+                <button id="downloadImageBtn"
+                    class="px-8 py-3 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 transition transform hover:-translate-y-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-5 h-5 inline-block mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-3L12 16.5m0 0l4.5-4.5M12 16.5V3" />
+                    </svg>
+                    Download Image
+                </button>
+                <p class="mt-2 text-sm text-gray-600" id="downloadNote">
+                    Quality setting affects JPG and WebP. For PNG, quality setting reduces colors for file size.
+                </p>
+            </div>
+
+            <canvas id="processingCanvas" class="hidden"></canvas> <!-- Hidden canvas for primary image processing -->
+        </div>
+
+        <aside
+            class="md:col-span-1 bg-white p-6 rounded-2xl shadow-xl border border-gray-200 flex flex-col justify-center items-center text-center">
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Advertisement</h3>
+            <div
+                class="w-full h-48 bg-gray-200 flex items-center justify-center rounded-lg border-dashed border-2 border-gray-400 text-gray-500">
+                <p>Your Ad Here!</p>
+            </div>
+            <p class="mt-4 text-sm text-gray-600">Integrate your ad network code here to monetize your website.</p>
+        </aside>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white p-6 mt-8 rounded-t-xl shadow-lg">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2025 My Utility Tools. All rights reserved.</p>
+            <p class="text-sm mt-2">Optimize your visuals effortlessly.</p>
+        </div>
+    </footer>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imageFileNameDisplay = document.getElementById('imageFileName');
+        const imageErrorDisplay = document.getElementById('imageError');
+        const controlsContainer = document.getElementById('controlsContainer');
+        const newWidthInput = document.getElementById('newWidth');
+        const newHeightInput = document.getElementById('newHeight');
+        const maintainAspectRatioCheckbox = document.getElementById('maintainAspectRatio');
+        const qualityRange = document.getElementById('qualityRange');
+        const qualityValueDisplay = document.getElementById('qualityValue');
+        const outputFormatSelect = document.getElementById('outputFormatSelect');
+        const processImageBtn = document.getElementById('processImageBtn');
+        const outputContainer = document.getElementById('outputContainer');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const downloadImageBtn = document.getElementById('downloadImageBtn');
+        const originalSizeDisplay = document.getElementById('originalSize');
+        const originalDimensionsDisplay = document.getElementById('originalDimensions');
+        const newSizeDisplay = document.getElementById('newSize');
+        const newDimensionsDisplay = document.getElementById('newDimensions');
+        const sizeDifferenceDisplay = document.getElementById('sizeDifference');
+        const downloadNote = document.getElementById('downloadNote');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        const processingCanvas = document.getElementById('processingCanvas');
+        const ctx = processingCanvas.getContext('2d');
+
+        let originalImage = null;
+        let originalWidth = 0;
+        let originalHeight = 0;
+        let originalFileSize = 0; // In bytes
+
+        // Function to reset UI and variables
+        function resetUI() {
+            originalImage = null;
+            originalWidth = 0;
+            originalHeight = 0;
+            originalFileSize = 0;
+            imageFileNameDisplay.textContent = '';
+            imageErrorDisplay.textContent = '';
+            controlsContainer.classList.add('hidden');
+            outputContainer.classList.add('hidden');
+            newWidthInput.value = '';
+            newHeightInput.value = '';
+            qualityRange.value = 90;
+            qualityValueDisplay.textContent = 90;
+            outputFormatSelect.value = 'jpeg'; // Reset to default JPG
+            outputCanvas.getContext('2d').clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+            originalSizeDisplay.textContent = '0KB';
+            originalDimensionsDisplay.textContent = '0x0';
+            newSizeDisplay.textContent = '0KB';
+            newDimensionsDisplay.textContent = '0x0';
+            sizeDifferenceDisplay.textContent = '';
+            updateDownloadNote(); // Ensure note is correct on reset
+        }
+
+        // Handle image file input
+        imageInput.addEventListener('change', (event) => {
+            resetUI(); // Reset everything when a new file is selected
+            const file = event.target.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                imageErrorDisplay.textContent = 'Please upload an image file (PNG, JPG, JPEG, WEBP).';
+                return;
+            }
+
+            imageFileNameDisplay.textContent = `Loading: ${file.name}...`;
+            loadingOverlay.classList.add('active');
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    originalWidth = img.naturalWidth;
+                    originalHeight = img.naturalHeight;
+                    originalFileSize = file.size; // Get original file size
+
+                    newWidthInput.value = originalWidth;
+                    newHeightInput.value = originalHeight;
+                    originalDimensionsDisplay.textContent = `${originalWidth}x${originalHeight}`;
+                    originalSizeDisplay.textContent = `${(originalFileSize / 1024).toFixed(2)}KB`;
+
+                    controlsContainer.classList.remove('hidden');
+                    imageFileNameDisplay.textContent = `Selected: ${file.name}`;
+                    loadingOverlay.classList.remove('active');
+
+                    // Set initial output format based on input file type
+                    if (file.type === 'image/png') {
+                        outputFormatSelect.value = 'png';
+                    } else if (file.type === 'image/webp') {
+                        outputFormatSelect.value = 'webp';
+                    } else {
+                        outputFormatSelect.value = 'jpeg';
+                    }
+                    updateDownloadNote(); // Update the note based on default/initial selection
+
+                    // Automatically process and display initial image with default settings
+                    processImage();
+                };
+                img.onerror = () => {
+                    imageErrorDisplay.textContent = 'Could not load image. Please try a different file.';
+                    loadingOverlay.classList.remove('active');
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = () => {
+                imageErrorDisplay.textContent = 'Error reading file.';
+                loadingOverlay.classList.remove('active');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Update quality value display
+        qualityRange.addEventListener('input', () => {
+            qualityValueDisplay.textContent = qualityRange.value;
+            // Re-process image instantly as quality changes for preview feedback
+            processImage();
+        });
+
+        // Update download note and quality slider state when output format changes
+        outputFormatSelect.addEventListener('change', () => {
+            updateDownloadNote();
+            processImage(); // Re-process image with new format
+        });
+
+        function updateDownloadNote() {
+            const format = outputFormatSelect.value;
+            if (format === 'png') {
+                downloadNote.textContent = 'For PNG, quality setting reduces the number of colors for file size. Best for images with sharp lines/text.';
+                qualityRange.disabled = false; // Enable quality slider for PNG too now
+                qualityRange.classList.remove('opacity-50', 'cursor-not-allowed'); // Remove disabled styling
+            } else {
+                downloadNote.textContent = `Quality setting affects ${format.toUpperCase()}. Lower quality for smaller file size.`;
+                qualityRange.disabled = false; // Ensure enabled for JPG/WebP
+                qualityRange.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Aspect ratio lock logic
+        newWidthInput.addEventListener('input', () => {
+            if (maintainAspectRatioCheckbox.checked && originalWidth > 0) {
+                const newWidth = parseFloat(newWidthInput.value);
+                if (!isNaN(newWidth) && newWidth > 0) {
+                    newHeightInput.value = Math.round((newWidth / originalWidth) * originalHeight);
+                }
+            }
+        });
+
+        newHeightInput.addEventListener('input', () => {
+            if (maintainAspectRatioCheckbox.checked && originalHeight > 0) {
+                const newHeight = parseFloat(newHeightInput.value);
+                if (!isNaN(newHeight) && newHeight > 0) {
+                    newWidthInput.value = Math.round((newHeight / originalHeight) * originalWidth);
+                }
+            }
+        });
+
+        // Main image processing function
+        async function processImage() {
+            if (!originalImage) {
+                imageErrorDisplay.textContent = 'Please upload an image first.';
+                return;
+            }
+
+            loadingOverlay.classList.add('active');
+            imageErrorDisplay.textContent = '';
+
+            let targetWidth = parseFloat(newWidthInput.value);
+            let targetHeight = parseFloat(newHeightInput.value);
+            const quality = parseFloat(qualityRange.value) / 100;
+            const selectedOutputFormat = outputFormatSelect.value;
+
+            // Validate dimensions
+            if (isNaN(targetWidth) || targetWidth <= 0 || isNaN(targetHeight) || targetHeight <= 0) {
+                imageErrorDisplay.textContent = 'Please enter valid width and height values (must be greater than 0).';
+                loadingOverlay.classList.remove('active');
+                return;
+            }
+
+            // Create a temporary canvas for intermediate drawing
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = targetWidth;
+            tempCanvas.height = targetHeight;
+            tempCtx.drawImage(originalImage, 0, 0, targetWidth, targetHeight);
+
+
+            let imageDataURL;
+            let outputMimeType;
+            let fileExtension;
+
+            switch (selectedOutputFormat) {
+                case 'jpeg':
+                    outputMimeType = 'image/jpeg';
+                    fileExtension = 'jpg';
+                    imageDataURL = tempCanvas.toDataURL(outputMimeType, quality);
+                    break;
+                case 'png':
+                    outputMimeType = 'image/png';
+                    fileExtension = 'png';
+                    // Apply color quantization for PNG if quality is less than 100 and ImageQuant is available
+                    if (quality < 1.0 && typeof ImageQuant !== 'undefined') { // Only quantize if quality < 100%
+                        try {
+                            const imageData = tempCtx.getImageData(0, 0, targetWidth, targetHeight);
+
+                            // Max colors will range from 2 (at 10% quality) up to 256 (at 100% quality).
+                            // A linear scale from 10% (0.1) to 100% (1.0) maps to 2 to 256 colors.
+                            const maxColors = Math.max(2, Math.min(256, Math.round(2 + (quality - 0.1) / 0.9 * 254)));
+
+                            // Using Promise-based quantization for better async handling
+                            ImageQuant.quantizer.wu.quantize(imageData.data, maxColors).then(palette => {
+                                ImageQuant.utils.applyPalette(imageData.data, palette).then(quantizedPixels => {
+                                    const finalImageData = new ImageData(
+                                        new Uint8ClampedArray(quantizedPixels),
+                                        targetWidth,
+                                        targetHeight
+                                    );
+                                    processingCanvas.width = targetWidth;
+                                    processingCanvas.height = targetHeight;
+                                    ctx.putImageData(finalImageData, 0, 0);
+                                    imageDataURL = processingCanvas.toDataURL(outputMimeType);
+                                    // Continue with showing output and calculating size here or in a separate callback
+                                    showProcessedOutput(imageDataURL, outputImg, fileExtension);
+                                }).catch(e => {
+                                    console.error('Error applying palette:', e);
+                                    imageErrorDisplay.textContent = 'Error applying PNG palette. Reverting to basic PNG export.';
+                                    imageDataURL = tempCanvas.toDataURL(outputMimeType);
+                                    showProcessedOutput(imageDataURL, outputImg, fileExtension);
+                                });
+                            }).catch(e => {
+                                console.error('Error quantizing:', e);
+                                imageErrorDisplay.textContent = 'Error quantizing PNG. Reverting to basic PNG export.';
+                                imageDataURL = tempCanvas.toDataURL(outputMimeType);
+                                showProcessedOutput(imageDataURL, outputImg, fileExtension);
+                            });
+                            return; // Exit here as the rest of the logic is in the promises
+
+                        } catch (e) {
+                            console.error('Error during PNG quantization setup:', e);
+                            imageErrorDisplay.textContent = 'Error compressing PNG. Reverting to basic PNG export.';
+                            imageDataURL = tempCanvas.toDataURL(outputMimeType);
+                        }
+                    } else { // Quality is 100% or ImageQuant not available
+                        imageDataURL = tempCanvas.toDataURL(outputMimeType);
+                    }
+                    break;
+                case 'webp':
+                    outputMimeType = 'image/webp';
+                    fileExtension = 'webp';
+                    imageDataURL = tempCanvas.toDataURL(outputMimeType, quality);
+                    break;
+                default:
+                    outputMimeType = 'image/jpeg'; // Fallback
+                    fileExtension = 'jpg';
+                    imageDataURL = tempCanvas.toDataURL(outputMimeType, quality);
+            }
+
+            // This part will run immediately for JPG/WebP or as a callback for PNG
+            if (selectedOutputFormat !== 'png' || quality === 1.0 || typeof ImageQuant === 'undefined') {
+                showProcessedOutput(imageDataURL, outputImg, fileExtension);
+            }
+        }
+
+        // Helper function to display processed output and calculate size
+        async function showProcessedOutput(imageDataURL, outputImg, fileExtension) {
+            outputImg.onload = async () => {
+                outputCanvas.width = outputImg.naturalWidth;
+                outputCanvas.height = outputImg.naturalHeight;
+                outputCanvas.getContext('2d').clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+                outputCanvas.getContext('2d').drawImage(outputImg, 0, 0);
+
+                // Update output info
+                newDimensionsDisplay.textContent = `${outputImg.naturalWidth}x${outputImg.naturalHeight}`;
+
+                // Calculate new file size accurately using Blob
+                try {
+                    const blob = await (await fetch(imageDataURL)).blob();
+                    const newFileSize = blob.size; // This is in bytes
+                    newSizeDisplay.textContent = `${(newFileSize / 1024).toFixed(2)}KB`;
+
+                    const diff = originalFileSize - newFileSize;
+                    const diffPercent = originalFileSize > 0 ? ((diff / originalFileSize) * 100).toFixed(1) : 0;
+
+                    if (diff > 0) {
+                        sizeDifferenceDisplay.textContent = ` (${(diff / 1024).toFixed(2)}KB saved, ${diffPercent}% reduction)`;
+                        sizeDifferenceDisplay.classList.remove('text-red-500');
+                        sizeDifferenceDisplay.classList.add('text-green-600');
+                    } else if (diff < 0) {
+                        sizeDifferenceDisplay.textContent = ` (${(Math.abs(diff) / 1024).toFixed(2)}KB increase, ${Math.abs(diffPercent)}% increase)`;
+                        sizeDifferenceDisplay.classList.remove('text-green-600');
+                        sizeDifferenceDisplay.classList.add('text-red-500');
+                    } else {
+                        sizeDifferenceDisplay.textContent = ' (No change in size or original size is 0)';
+                        sizeDifferenceDisplay.classList.remove('text-green-600', 'text-red-500');
+                    }
+
+                } catch (blobError) {
+                    console.error('Error calculating blob size:', blobError);
+                    newSizeDisplay.textContent = 'Error calculating size';
+                    sizeDifferenceDisplay.textContent = '';
+                }
+
+                outputContainer.classList.remove('hidden');
+                downloadImageBtn.dataset.imageDataUrl = imageDataURL; // Store for download
+                downloadImageBtn.dataset.fileExtension = fileExtension; // Store extension for download
+                loadingOverlay.classList.remove('active');
+            };
+            outputImg.onerror = () => {
+                imageErrorDisplay.textContent = 'Error displaying processed image. Ensure dimensions are valid.';
+                loadingOverlay.classList.remove('active');
+            };
+            outputImg.src = imageDataURL;
+        }
+
+        // Download functionality
+        downloadImageBtn.addEventListener('click', () => {
+            const imageDataUrl = downloadImageBtn.dataset.imageDataUrl;
+            const fileExtension = downloadImageBtn.dataset.fileExtension;
+            if (!imageDataUrl || !fileExtension) {
+                imageErrorDisplay.textContent = 'No image to download.';
+                return;
+            }
+
+            const a = document.createElement('a');
+            a.href = imageDataUrl;
+            const originalFileName = imageInput.files[0] ? imageInput.files[0].name.split('.')[0] : 'image';
+            a.download = `${originalFileName}_optimized.${fileExtension}`;
+            document.body.appendChild(a); // Required for Firefox
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        processImageBtn.addEventListener('click', processImage);
+
+        // Initial setup
+        window.onload = resetUI; // Ensure UI is clean on first load
+    </script>
+</body>
+
+</html>
